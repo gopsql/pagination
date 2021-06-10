@@ -1,51 +1,34 @@
-/*
-Package pagination is useful for simple search and pagination.
-
-	func list(c echo.Context) error {
-		q := pagination.Query{
-			MaxPer:     50,
-			DefaultPer: 20,
-		}
-		c.Bind(&q)
-		cond := "WHERE app_id = $1"
-		qt, qa := q.GetQuery()
-		if qt != "" {
-			cond += " AND (name ILIKE $2 OR message ILIKE $2)"
-		}
-		count := modelPost.MustCount(append([]interface{}{cond, appId}, qa...)...)
-		posts := []models.Post{}
-		sql := cond + " ORDER BY created_at DESC " + q.LimitOffset()
-		modelPost.Find(append([]interface{}{sql, appId}, qa...)...).MustQuery(&posts)
-		return c.JSON(200, struct {
-			Posts      []models.Post
-			Pagination pagination.Result
-		}{posts, q.Result(count)})
-	}
-*/
 package pagination
 
 import (
 	"fmt"
 	"math"
-	"strings"
 )
 
-const (
-	DefaultMaxPer     = 100
+var (
+	// Default MaxPer value if Pagination's MaxPer is not set.
+	DefaultMaxPer = 100
+
+	// Default DefaultPer value if Pagination's DefaultPer is not set.
 	DefaultDefaultPer = 10
 )
 
 type (
-	Query struct {
-		Query string `query:"query"`
-		Page  int    `query:"page"`
-		Per   int    `query:"per"`
+	Pagination struct {
+		// The page value.
+		Page int `query:"page"`
 
-		MaxPer     int
+		// The per value.
+		Per int `query:"per"`
+
+		// Maximum per value.
+		MaxPer int
+
+		// DefaultPer is used if the per value is empty.
 		DefaultPer int
 	}
 
-	Result struct {
+	PaginationResult struct {
 		CurrentPage *int
 		NextPage    *int
 		PrevPage    *int
@@ -55,29 +38,20 @@ type (
 	}
 )
 
-func (q Query) GetQuery() (query string, args []interface{}) {
-	query = strings.TrimSpace(q.Query)
-	if query == "" {
-		return
-	}
-	args = append(args, "%"+strings.ReplaceAll(strings.ReplaceAll(query, "%", `\%`), "_", `\_`)+"%")
-	return
+func (p Pagination) LimitOffset() string {
+	return fmt.Sprintf("LIMIT %d OFFSET %d", p.GetPer(), (p.GetPage()-1)*p.GetPer())
 }
 
-func (q Query) LimitOffset() string {
-	return fmt.Sprintf("LIMIT %d OFFSET %d", q.GetPer(), (q.GetPage()-1)*q.GetPer())
-}
-
-func (q Query) GetPage() int {
-	page := q.Page
+func (p Pagination) GetPage() int {
+	page := p.Page
 	if page < 1 {
 		page = 1
 	}
 	return page
 }
 
-func (q Query) GetPer() int {
-	per, maxPer, defaultPer := q.Per, q.MaxPer, q.DefaultPer
+func (p Pagination) GetPer() int {
+	per, maxPer, defaultPer := p.Per, p.MaxPer, p.DefaultPer
 	if maxPer < 1 {
 		maxPer = DefaultMaxPer
 	}
@@ -92,20 +66,20 @@ func (q Query) GetPer() int {
 	return per
 }
 
-func (q Query) Result(count int) (p Result) {
-	per, page := q.GetPer(), q.GetPage()
-	p = Result{
+func (p Pagination) PaginationResult(count int) (r PaginationResult) {
+	per, page := p.GetPer(), p.GetPage()
+	r = PaginationResult{
 		TotalCount:  &count,
 		LimitValue:  &per,
 		CurrentPage: &page,
 	}
 	tp, np, pp := int(math.Ceil(float64(count)/float64(per))), page+1, page-1
-	p.TotalPages = &tp
+	r.TotalPages = &tp
 	if np <= tp {
-		p.NextPage = &np
+		r.NextPage = &np
 	}
 	if pp > 0 {
-		p.PrevPage = &pp
+		r.PrevPage = &pp
 	}
 	return
 }
