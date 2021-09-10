@@ -84,13 +84,20 @@ func (s Sort) GetOrder() string {
 	}
 }
 
-func (s Sort) OrderBy() string {
+func (s Sort) OrderByValue() string {
 	if sort := s.GetSort(); sort != "" {
 		sort = s.getSortExpression(sort)
 		if strings.Contains(sort, "{}") {
-			return fmt.Sprintf("ORDER BY %s", strings.Replace(sort, "{}", s.GetOrder(), -1))
+			return strings.Replace(sort, "{}", s.GetOrder(), -1)
 		}
-		return fmt.Sprintf("ORDER BY %s %s", sort, s.GetOrder())
+		return fmt.Sprintf("%s %s", sort, s.GetOrder())
+	}
+	return ""
+}
+
+func (s Sort) OrderBy() string {
+	if value := s.OrderByValue(); value != "" {
+		return "ORDER BY " + value
 	}
 	return ""
 }

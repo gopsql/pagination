@@ -38,8 +38,16 @@ type (
 	}
 )
 
+func (p Pagination) Limit() int {
+	return p.GetPer()
+}
+
+func (p Pagination) Offset() int {
+	return (p.GetPage() - 1) * p.GetPer()
+}
+
 func (p Pagination) LimitOffset() string {
-	return fmt.Sprintf("LIMIT %d OFFSET %d", p.GetPer(), (p.GetPage()-1)*p.GetPer())
+	return fmt.Sprintf("LIMIT %d OFFSET %d", p.Limit(), p.Offset())
 }
 
 func (p Pagination) GetPage() int {
