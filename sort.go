@@ -30,8 +30,11 @@ type (
 		DefaultSort string
 
 		// DefaultOrder is used if the order value is empty.
-		// Must be "asc" or "desc".
+		// Must be "asc" or "desc". Default value is "desc".
 		DefaultOrder string
+
+		// Make "DefaultSort" as the "fallback" sort method.
+		AlwaysUseDefaultSort bool
 	}
 
 	SortResult struct {
@@ -86,11 +89,18 @@ func (s Sort) GetOrder() string {
 
 func (s Sort) OrderByValue() string {
 	if sort := s.GetSort(); sort != "" {
-		sort = s.getSortExpression(sort)
-		if strings.Contains(sort, "{}") {
-			return strings.Replace(sort, "{}", s.GetOrder(), -1)
+		out := s.getSortExpression(sort, s.GetOrder())
+		if s.AlwaysUseDefaultSort && sort != s.DefaultSort {
+			defaultOrder := s.DefaultOrder
+			if defaultOrder == "asc" {
+				defaultOrder = "ASC"
+			} else {
+				defaultOrder = "DESC"
+			}
+			defaultSort := s.getSortExpression(s.DefaultSort, defaultOrder)
+			return out + ", " + defaultSort
 		}
-		return fmt.Sprintf("%s %s", sort, s.GetOrder())
+		return out
 	}
 	return ""
 }
@@ -111,16 +121,23 @@ func (s Sort) SortResult() (r SortResult) {
 	return
 }
 
-func (s Sort) getSortExpression(in string) string {
+func (s Sort) getSortExpression(in, order string) string {
+	var sort string
 	switch sorts := s.AllowedSorts.(type) {
 	case []string:
-		return in
+		sort = in
 	case map[string]string:
 		if out, ok := sorts[in]; ok && out != "" {
-			return out
+			sort = out
+		} else {
+			sort = in
 		}
-		return in
 	default:
-		return in
+		sort = in
+	}
+	if strings.Contains(sort, "{}") {
+		return strings.Replace(sort, "{}", order, -1)
+	} else {
+		return fmt.Sprintf("%s %s", sort, order)
 	}
 }

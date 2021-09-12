@@ -72,3 +72,24 @@ func TestSort06(t *testing.T) {
 	assert.Equal(t, "ORDER BY created_at DESC NULLS LAST", s.OrderBy())
 	assert.Equal(t, toJson(s.SortResult()), `{"Sort":"updated_at","Order":"desc"}`)
 }
+
+func TestSort07(t *testing.T) {
+	s := pagination.Sort{
+		AllowedSorts: map[string]string{
+			"created_at": "created_at {} NULLS LAST",
+			"updated_at": "updated_at {} NULLS LAST",
+		},
+		DefaultSort:          "created_at",
+		DefaultOrder:         "asc",
+		AlwaysUseDefaultSort: true,
+	}
+	newCtx("/").Bind(&s)
+	assert.Equal(t, "ORDER BY created_at ASC NULLS LAST", s.OrderBy())
+	assert.Equal(t, toJson(s.SortResult()), `{"Sort":"created_at","Order":"asc"}`)
+	newCtx("/?sort=created_at&order=desc").Bind(&s)
+	assert.Equal(t, "ORDER BY created_at DESC NULLS LAST", s.OrderBy())
+	assert.Equal(t, toJson(s.SortResult()), `{"Sort":"created_at","Order":"desc"}`)
+	newCtx("/?sort=updated_at&order=desc").Bind(&s)
+	assert.Equal(t, "ORDER BY updated_at DESC NULLS LAST, created_at ASC NULLS LAST", s.OrderBy())
+	assert.Equal(t, toJson(s.SortResult()), `{"Sort":"updated_at","Order":"desc"}`)
+}
