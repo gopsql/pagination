@@ -2,6 +2,10 @@
 
 Convert pagination, query and/or sort query parameters to SQL expressions.
 
+Can be used in:
+- [echo](https://github.com/labstack/echo): `c.Bind(&q)`
+- [fiber](https://github.com/gofiber/fiber): `pagination.Bind(&q, c.QueryParser)`
+
 ```go
 func list(c echo.Context) error {
 	q := pagination.PaginationQuerySort{
