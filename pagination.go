@@ -35,6 +35,8 @@ type (
 		TotalPages  *int
 		TotalCount  *int
 		LimitValue  *int
+		From        *int
+		To          *int
 	}
 )
 
@@ -88,6 +90,15 @@ func (p Pagination) PaginationResult(count int) (r PaginationResult) {
 	}
 	if pp > 0 {
 		r.PrevPage = &pp
+	}
+	if count > 0 && page <= tp {
+		from := pp*per + 1
+		to := page * per
+		if to > count {
+			to = count
+		}
+		r.From = &from
+		r.To = &to
 	}
 	return
 }

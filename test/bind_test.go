@@ -21,5 +21,5 @@ func TestBind(t *testing.T) {
 	assert.Equal(t, "%foo%", p.GetLikePattern())
 	assert.Equal(t, toJson(p.PaginationQuerySortResult(18)),
 		`{"CurrentPage":2,"NextPage":null,"PrevPage":1,"TotalPages":2,"TotalCount":18,"LimitValue":15,`+
-			`"Query":"foo","Sort":"created_at","Order":"asc"}`)
+			`"From":16,"To":18,"Query":"foo","Sort":"created_at","Order":"asc"}`)
 }
